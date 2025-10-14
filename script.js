@@ -15,27 +15,33 @@ let cart = [];
 let selectedProduct = null;
 let selectedCanElement = null;
 
-// Grid state - track row and column positions
-let canGrid = []; // 2D array [row][col]
+// Grid state - track row, column, and depth positions
+let canGrid = []; // 3D array [shelf][col][depth]
 
 // Initialize the vending machine
 function initVendingMachine() {
     const cansGrid = document.getElementById('cans-grid');
 
-    // Initialize 2D array for tracking cans
-    canGrid = Array(6).fill(null).map(() => Array(10).fill(null));
+    // Initialize 3D array for tracking cans: 6 shelves x 10 columns x 3 depth rows
+    canGrid = Array(6).fill(null).map(() =>
+        Array(10).fill(null).map(() =>
+            Array(3).fill(null)
+        )
+    );
 
-    // Create 6 rows x 10 columns = 60 cans
-    for (let row = 0; row < 6; row++) {
-        for (let col = 0; col < 10; col++) {
-            const product = products[row]; // Each row represents a different product
-            const can = createCan(product, row, col);
-            cansGrid.appendChild(can);
-            canGrid[row][col] = can;
+    // Create 6 shelves x 10 columns x 3 depth rows = 180 cans
+    for (let shelf = 0; shelf < 6; shelf++) {
+        const product = products[shelf];
+        for (let depth = 2; depth >= 0; depth--) { // Back to front (for proper z-index)
+            for (let col = 0; col < 10; col++) {
+                const can = createCan(product, shelf, col, depth);
+                cansGrid.appendChild(can);
+                canGrid[shelf][col][depth] = can;
+            }
         }
     }
 
-    // Add price tags for each row
+    // Add price tags for each shelf
     addPriceTags();
 }
 
@@ -64,12 +70,13 @@ function addPriceTags() {
 }
 
 // Create a single can element with 3D wrapper
-function createCan(product, row, col) {
+function createCan(product, shelf, col, depth) {
     const can = document.createElement('div');
     can.className = 'can';
     can.dataset.productId = product.id;
-    can.dataset.row = row;
+    can.dataset.shelf = shelf;
     can.dataset.col = col;
+    can.dataset.depth = depth;
 
     // Create 3D wrapper for transform effects
     const wrapper = document.createElement('div');
@@ -82,8 +89,14 @@ function createCan(product, row, col) {
     wrapper.appendChild(img);
     can.appendChild(wrapper);
 
-    // Add click event listener
-    can.addEventListener('click', () => handleCanClick(can, product));
+    // Add click event listener - only front cans are clickable
+    if (depth === 0) {
+        can.addEventListener('click', () => handleCanClick(can, product));
+        can.style.cursor = 'pointer';
+    } else {
+        can.style.cursor = 'default';
+        can.style.pointerEvents = 'none'; // Back cans not clickable
+    }
 
     return can;
 }
@@ -103,8 +116,9 @@ function confirmPurchase() {
     // Store references locally before clearing
     const canElement = selectedCanElement;
     const product = selectedProduct;
-    const row = parseInt(canElement.dataset.row);
+    const shelf = parseInt(canElement.dataset.shelf);
     const col = parseInt(canElement.dataset.col);
+    const depth = parseInt(canElement.dataset.depth);
 
     // Check if can is already dropping or doesn't exist
     if (!canElement || canElement.classList.contains('dropping')) {
@@ -129,11 +143,11 @@ function confirmPurchase() {
             addToCart(product);
 
             // Remove the can from grid
-            canGrid[row][col] = null;
+            canGrid[shelf][col][depth] = null;
             canElement.remove();
 
-            // Move remaining cans forward
-            moveCanForward(row, col);
+            // Move remaining cans forward (from deeper rows)
+            moveCanForward(shelf, col, depth);
 
         }, 1200);
     });
@@ -157,28 +171,42 @@ function animateSpringPush(canElement, callback) {
 }
 
 // Move cans forward after one is dispensed
-function moveCanForward(row, col) {
-    // Find all cans to the right in the same row that need to move
-    for (let c = col; c < 9; c++) {
-        if (canGrid[row][c + 1]) {
-            const nextCan = canGrid[row][c + 1];
+function moveCanForward(shelf, col, depth) {
+    // First, move cans from behind (deeper rows) to the front
+    if (depth === 0) {
+        // Front can was taken, move middle or back can forward
+        for (let d = 1; d < 3; d++) {
+            if (canGrid[shelf][col][d]) {
+                const canToMove = canGrid[shelf][col][d];
 
-            // Move the can forward with animation
-            nextCan.classList.add('moving-forward');
+                // Move to front with animation
+                canToMove.classList.add('moving-forward');
 
-            // Update grid position
-            canGrid[row][c] = nextCan;
-            canGrid[row][c + 1] = null;
+                // Update grid position
+                canGrid[shelf][col][d - 1] = canToMove;
+                canGrid[shelf][col][d] = null;
 
-            // Update data attributes
-            nextCan.dataset.col = c;
+                // Update data attributes and styling
+                canToMove.dataset.depth = d - 1;
 
-            // Remove animation class after completion
-            setTimeout(() => {
-                nextCan.classList.remove('moving-forward');
-            }, 600);
-        } else {
-            break; // No more cans to move
+                // Make clickable if now at front
+                if (d - 1 === 0) {
+                    canToMove.style.cursor = 'pointer';
+                    canToMove.style.pointerEvents = 'auto';
+                    canToMove.addEventListener('click', () => {
+                        const productId = parseInt(canToMove.dataset.productId);
+                        const product = products.find(p => p.id === productId);
+                        handleCanClick(canToMove, product);
+                    });
+                }
+
+                // Remove animation class after completion
+                setTimeout(() => {
+                    canToMove.classList.remove('moving-forward');
+                }, 600);
+
+                break; // Only move one can forward
+            }
         }
     }
 }

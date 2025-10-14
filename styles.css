@@ -75,22 +75,71 @@ body {
     z-index: 10;
 }
 
+/* Realistic internal lighting */
+.machine-glass-area::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+        /* Top LED strip lighting */
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.15) 0%,
+            rgba(240, 248, 255, 0.08) 5%,
+            transparent 15%
+        ),
+        /* Bottom ambient lighting */
+        linear-gradient(0deg,
+            rgba(200, 220, 255, 0.05) 0%,
+            transparent 10%
+        ),
+        /* Vertical light strips on sides */
+        radial-gradient(ellipse 5% 100% at 2% 50%,
+            rgba(255, 255, 255, 0.06) 0%,
+            transparent 70%
+        ),
+        radial-gradient(ellipse 5% 100% at 98% 50%,
+            rgba(255, 255, 255, 0.06) 0%,
+            transparent 70%
+        ),
+        /* Overall cool white illumination */
+        radial-gradient(ellipse at center,
+            rgba(240, 248, 255, 0.12) 0%,
+            rgba(220, 235, 255, 0.06) 50%,
+            transparent 100%
+        );
+    pointer-events: none;
+    z-index: 1;
+    animation: lightFlicker 4s ease-in-out infinite;
+}
+
+@keyframes lightFlicker {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.95;
+    }
+}
+
 .cans-grid {
     display: grid;
     grid-template-columns: repeat(10, 1fr);
-    grid-template-rows: repeat(6, 1fr);
-    gap: 4px;
+    grid-template-rows: repeat(18, 1fr); /* 6 shelves × 3 depth rows */
+    gap: 3px;
     height: 600px;
     position: relative;
     background:
-        /* Horizontal shelves */
+        /* Horizontal shelves - every 3 rows */
         repeating-linear-gradient(
             to bottom,
             transparent 0px,
-            transparent 99px,
-            #888 99px,
-            #555 100px,
-            transparent 100px
+            transparent calc(100% / 6 - 2px),
+            #888 calc(100% / 6 - 2px),
+            #555 calc(100% / 6),
+            transparent calc(100% / 6)
         ),
         /* Vertical dividers between columns */
         repeating-linear-gradient(
@@ -141,33 +190,60 @@ body {
     perspective: 500px;
 }
 
-/* Metal spring/coil behind each can */
+/* Depth row styling - front, middle, back */
+.can[data-depth="0"] {
+    /* Front row - most visible */
+    opacity: 1;
+    filter: brightness(1);
+    z-index: 3;
+}
+
+.can[data-depth="1"] {
+    /* Middle row - slightly dimmed */
+    opacity: 0.85;
+    filter: brightness(0.9);
+    transform: scale(0.95);
+    z-index: 2;
+}
+
+.can[data-depth="2"] {
+    /* Back row - most dimmed */
+    opacity: 0.7;
+    filter: brightness(0.8);
+    transform: scale(0.90);
+    z-index: 1;
+}
+
+/* Circular/helical spring coil behind each can */
 .can::before {
     content: '';
     position: absolute;
-    bottom: 0;
+    bottom: 5%;
     left: 50%;
     transform: translateX(-50%);
-    width: 60%;
-    height: 80%;
+    width: 40%;
+    height: 70%;
     background:
-        repeating-linear-gradient(
-            to bottom,
-            transparent 0px,
-            transparent 3px,
-            #666 3px,
-            #888 4px,
-            #999 5px,
-            #888 6px,
-            #666 7px,
-            transparent 7px,
-            transparent 10px
+        /* Spring coil rings */
+        radial-gradient(ellipse 100% 8% at 50% 10%, #888 0%, #666 40%, transparent 50%),
+        radial-gradient(ellipse 100% 8% at 50% 25%, #888 0%, #666 40%, transparent 50%),
+        radial-gradient(ellipse 100% 8% at 50% 40%, #888 0%, #666 40%, transparent 50%),
+        radial-gradient(ellipse 100% 8% at 50% 55%, #888 0%, #666 40%, transparent 50%),
+        radial-gradient(ellipse 100% 8% at 50% 70%, #888 0%, #666 40%, transparent 50%),
+        radial-gradient(ellipse 100% 8% at 50% 85%, #888 0%, #666 40%, transparent 50%),
+        /* Central spring wire */
+        linear-gradient(90deg,
+            transparent 45%,
+            #555 45%,
+            #777 48%,
+            #999 50%,
+            #777 52%,
+            #555 55%,
+            transparent 55%
         );
-    border-left: 1px solid #555;
-    border-right: 1px solid #555;
     z-index: -1;
-    opacity: 0.4;
-    filter: blur(0.5px);
+    opacity: 0.5;
+    filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.3));
     transition: transform 0.5s ease;
     transform-origin: right center;
 }
