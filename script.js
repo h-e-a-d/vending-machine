@@ -26,6 +26,33 @@ function initVendingMachine() {
             cansGrid.appendChild(can);
         }
     }
+
+    // Add price tags for each row
+    addPriceTags();
+}
+
+// Add price tags under each row
+function addPriceTags() {
+    const cansGrid = document.getElementById('cans-grid');
+    const priceTagsContainer = document.createElement('div');
+    priceTagsContainer.className = 'price-tags';
+
+    // Create price tag for each row (6 rows)
+    for (let row = 0; row < 6; row++) {
+        const product = products[row];
+        const priceTag = document.createElement('div');
+        priceTag.className = 'price-tag';
+        priceTag.textContent = product.price.toFixed(2);
+
+        // Position at the bottom of each row
+        // Each row is ~16.67% of the grid height (100% / 6)
+        const topPosition = (row + 1) * (100 / 6) - 3; // -3% to place it at bottom of row
+        priceTag.style.top = `${topPosition}%`;
+
+        priceTagsContainer.appendChild(priceTag);
+    }
+
+    cansGrid.appendChild(priceTagsContainer);
 }
 
 // Create a single can element with 3D wrapper

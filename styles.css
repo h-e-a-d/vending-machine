@@ -81,6 +81,55 @@ body {
     grid-template-rows: repeat(6, 1fr);
     gap: 4px;
     height: 600px;
+    position: relative;
+    background:
+        /* Horizontal shelves */
+        repeating-linear-gradient(
+            to bottom,
+            transparent 0px,
+            transparent 99px,
+            #888 99px,
+            #555 100px,
+            transparent 100px
+        ),
+        /* Vertical dividers between columns */
+        repeating-linear-gradient(
+            to right,
+            transparent 0px,
+            transparent calc(10% - 1px),
+            rgba(136, 136, 136, 0.3) calc(10% - 1px),
+            rgba(136, 136, 136, 0.3) 10%
+        );
+}
+
+/* Price tags container */
+.price-tags {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.price-tag {
+    position: absolute;
+    right: 2px;
+    background: linear-gradient(135deg, #fff 0%, #f5f5f5 100%);
+    border: 1px solid #999;
+    border-radius: 2px;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: bold;
+    color: #333;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    font-family: 'Courier New', monospace;
+}
+
+.price-tag::before {
+    content: '$';
+    color: #16a34a;
 }
 
 /* 3D Can Rendering */
@@ -90,6 +139,35 @@ body {
     transform-style: preserve-3d;
     transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     perspective: 500px;
+}
+
+/* Metal spring/coil behind each can */
+.can::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 80%;
+    background:
+        repeating-linear-gradient(
+            to bottom,
+            transparent 0px,
+            transparent 3px,
+            #666 3px,
+            #888 4px,
+            #999 5px,
+            #888 6px,
+            #666 7px,
+            transparent 7px,
+            transparent 10px
+        );
+    border-left: 1px solid #555;
+    border-right: 1px solid #555;
+    z-index: -1;
+    opacity: 0.4;
+    filter: blur(0.5px);
 }
 
 .can-wrapper {
