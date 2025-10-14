@@ -13,17 +13,25 @@ let cart = [];
 
 // Display state
 let selectedProduct = null;
+let selectedCanElement = null;
+
+// Grid state - track row and column positions
+let canGrid = []; // 2D array [row][col]
 
 // Initialize the vending machine
 function initVendingMachine() {
     const cansGrid = document.getElementById('cans-grid');
 
+    // Initialize 2D array for tracking cans
+    canGrid = Array(6).fill(null).map(() => Array(10).fill(null));
+
     // Create 6 rows x 10 columns = 60 cans
     for (let row = 0; row < 6; row++) {
         for (let col = 0; col < 10; col++) {
             const product = products[row]; // Each row represents a different product
-            const can = createCan(product);
+            const can = createCan(product, row, col);
             cansGrid.appendChild(can);
+            canGrid[row][col] = can;
         }
     }
 
@@ -56,10 +64,12 @@ function addPriceTags() {
 }
 
 // Create a single can element with 3D wrapper
-function createCan(product) {
+function createCan(product, row, col) {
     const can = document.createElement('div');
     can.className = 'can';
     can.dataset.productId = product.id;
+    can.dataset.row = row;
+    can.dataset.col = col;
 
     // Create 3D wrapper for transform effects
     const wrapper = document.createElement('div');
@@ -80,40 +90,100 @@ function createCan(product) {
 
 // Handle can click event
 function handleCanClick(canElement, product) {
-    // Show product on display
+    // Store the specific can that was clicked
     selectedProduct = product;
+    selectedCanElement = canElement;
     updateDisplay();
 }
 
 // Confirm purchase from display
 function confirmPurchase() {
-    if (!selectedProduct) return;
+    if (!selectedProduct || !selectedCanElement) return;
 
-    // Find a can element to animate
-    const canElement = document.querySelector(`[data-product-id="${selectedProduct.id}"]`);
+    const row = parseInt(selectedCanElement.dataset.row);
+    const col = parseInt(selectedCanElement.dataset.col);
 
-    if (canElement && !canElement.classList.contains('dropping')) {
-        // Add dropping animation
-        canElement.classList.add('dropping');
+    // Check if can is already dropping or doesn't exist
+    if (!selectedCanElement || selectedCanElement.classList.contains('dropping')) {
+        selectedProduct = null;
+        selectedCanElement = null;
+        updateDisplay();
+        return;
+    }
+
+    // Animate spring rotation and push
+    animateSpringPush(selectedCanElement, () => {
+        // Drop the can
+        selectedCanElement.classList.add('dropping');
 
         // Add to cart after animation completes
         setTimeout(() => {
             addToCart(selectedProduct);
-            // Reset the can after a delay
-            setTimeout(() => {
-                canElement.classList.remove('dropping');
-            }, 100);
-        }, 800);
-    }
+
+            // Remove the can from grid
+            canGrid[row][col] = null;
+            selectedCanElement.remove();
+
+            // Move remaining cans forward
+            moveCanForward(row, col);
+
+        }, 1200);
+    });
 
     // Clear display
     selectedProduct = null;
+    selectedCanElement = null;
     updateDisplay();
+}
+
+// Animate spring rotation and push the can forward
+function animateSpringPush(canElement, callback) {
+    // Add spring rotation animation to the ::before element
+    canElement.classList.add('spring-rotating');
+
+    // Add push-out animation to the can
+    setTimeout(() => {
+        canElement.classList.add('pushing-out');
+    }, 300);
+
+    // Call callback after push animation
+    setTimeout(() => {
+        canElement.classList.remove('spring-rotating');
+        if (callback) callback();
+    }, 800);
+}
+
+// Move cans forward after one is dispensed
+function moveCanForward(row, col) {
+    // Find all cans to the right in the same row that need to move
+    for (let c = col; c < 9; c++) {
+        if (canGrid[row][c + 1]) {
+            const nextCan = canGrid[row][c + 1];
+
+            // Move the can forward with animation
+            nextCan.classList.add('moving-forward');
+
+            // Update grid position
+            canGrid[row][c] = nextCan;
+            canGrid[row][c + 1] = null;
+
+            // Update data attributes
+            nextCan.dataset.col = c;
+
+            // Remove animation class after completion
+            setTimeout(() => {
+                nextCan.classList.remove('moving-forward');
+            }, 600);
+        } else {
+            break; // No more cans to move
+        }
+    }
 }
 
 // Cancel selection
 function cancelSelection() {
     selectedProduct = null;
+    selectedCanElement = null;
     updateDisplay();
 }
 
