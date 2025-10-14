@@ -28,16 +28,22 @@ function initVendingMachine() {
     }
 }
 
-// Create a single can element
+// Create a single can element with 3D wrapper
 function createCan(product) {
     const can = document.createElement('div');
     can.className = 'can';
     can.dataset.productId = product.id;
 
+    // Create 3D wrapper for transform effects
+    const wrapper = document.createElement('div');
+    wrapper.className = 'can-wrapper';
+
     const img = document.createElement('img');
     img.src = product.image;
     img.alt = product.name;
-    can.appendChild(img);
+
+    wrapper.appendChild(img);
+    can.appendChild(wrapper);
 
     // Add click event listener
     can.addEventListener('click', () => handleCanClick(can, product));
