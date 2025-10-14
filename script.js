@@ -1,15 +1,18 @@
 // Product catalog with different Red Bull varieties
 const products = [
-    { id: 1, name: 'Red Bull Original', color: 'silver', price: 2.99 },
-    { id: 2, name: 'Red Bull Sugar Free', color: 'blue', price: 2.99 },
-    { id: 3, name: 'Red Bull Tropical', color: 'tropical', price: 2.99 },
-    { id: 4, name: 'Red Bull Red Edition', color: 'red', price: 2.99 },
-    { id: 5, name: 'Red Bull Green Edition', color: 'green', price: 2.99 },
-    { id: 6, name: 'Red Bull White Edition', color: 'white', price: 2.99 }
+    { id: 1, name: 'Red Bull Original', image: 'assets/196x0.webp', price: 2.99 },
+    { id: 2, name: 'Red Bull Sugar Free', image: 'assets/200x0.webp', price: 2.99 },
+    { id: 3, name: 'Red Bull Lilac Edition', image: 'assets/200x0 (1).webp', price: 2.99 },
+    { id: 4, name: 'Red Bull Apricot Edition', image: 'assets/200x0 (2).webp', price: 2.99 },
+    { id: 5, name: 'Red Bull Green Edition', image: 'assets/200x0 (3).webp', price: 2.99 },
+    { id: 6, name: 'Red Bull Blue Edition', image: 'assets/200x0 (4).webp', price: 2.99 }
 ];
 
 // Shopping cart state
 let cart = [];
+
+// Display state
+let selectedProduct = null;
 
 // Initialize the vending machine
 function initVendingMachine() {
@@ -28,9 +31,13 @@ function initVendingMachine() {
 // Create a single can element
 function createCan(product) {
     const can = document.createElement('div');
-    can.className = `can ${product.color}`;
+    can.className = 'can';
     can.dataset.productId = product.id;
-    can.innerHTML = `<span>${product.name.split(' ')[2] || 'RB'}</span>`;
+
+    const img = document.createElement('img');
+    img.src = product.image;
+    img.alt = product.name;
+    can.appendChild(img);
 
     // Add click event listener
     can.addEventListener('click', () => handleCanClick(can, product));
@@ -40,22 +47,62 @@ function createCan(product) {
 
 // Handle can click event
 function handleCanClick(canElement, product) {
-    // Prevent clicking the same can multiple times
-    if (canElement.classList.contains('dropping')) {
-        return;
+    // Show product on display
+    selectedProduct = product;
+    updateDisplay();
+}
+
+// Confirm purchase from display
+function confirmPurchase() {
+    if (!selectedProduct) return;
+
+    // Find a can element to animate
+    const canElement = document.querySelector(`[data-product-id="${selectedProduct.id}"]`);
+
+    if (canElement && !canElement.classList.contains('dropping')) {
+        // Add dropping animation
+        canElement.classList.add('dropping');
+
+        // Add to cart after animation completes
+        setTimeout(() => {
+            addToCart(selectedProduct);
+            // Reset the can after a delay
+            setTimeout(() => {
+                canElement.classList.remove('dropping');
+            }, 100);
+        }, 800);
     }
 
-    // Add dropping animation
-    canElement.classList.add('dropping');
+    // Clear display
+    selectedProduct = null;
+    updateDisplay();
+}
 
-    // Add to cart after animation completes
-    setTimeout(() => {
-        addToCart(product);
-        // Reset the can after a delay
-        setTimeout(() => {
-            canElement.classList.remove('dropping');
-        }, 100);
-    }, 800);
+// Cancel selection
+function cancelSelection() {
+    selectedProduct = null;
+    updateDisplay();
+}
+
+// Update display panel
+function updateDisplay() {
+    const displayScreen = document.getElementById('display-screen');
+    const displayImage = document.getElementById('display-image');
+    const displayName = document.getElementById('display-name');
+    const displayPrice = document.getElementById('display-price');
+
+    if (selectedProduct) {
+        displayImage.src = selectedProduct.image;
+        displayImage.style.display = 'block';
+        displayName.textContent = selectedProduct.name;
+        displayPrice.textContent = `$${selectedProduct.price.toFixed(2)}`;
+        displayScreen.classList.add('active');
+    } else {
+        displayImage.style.display = 'none';
+        displayName.textContent = 'Select a drink';
+        displayPrice.textContent = '';
+        displayScreen.classList.remove('active');
+    }
 }
 
 // Add product to cart
@@ -106,11 +153,11 @@ function updateCartUI() {
 
     // Update cart items
     if (cart.length === 0) {
-        cartItemsContainer.innerHTML = '<p class="empty-cart">Your cart is empty. Click a can to add!</p>';
+        cartItemsContainer.innerHTML = '<p class="empty-cart">Your cart is empty. Select a drink!</p>';
     } else {
         cartItemsContainer.innerHTML = cart.map(item => `
             <div class="cart-item">
-                <div class="cart-item-color ${item.color}" style="background: linear-gradient(135deg, ${getColorGradient(item.color)})"></div>
+                <img src="${item.image}" alt="${item.name}" class="cart-item-image">
                 <div class="cart-item-details">
                     <div class="cart-item-name">${item.name}</div>
                     <div class="cart-item-price">$${item.price.toFixed(2)} × ${item.quantity}</div>
@@ -119,19 +166,6 @@ function updateCartUI() {
             </div>
         `).join('');
     }
-}
-
-// Get color gradient for cart items
-function getColorGradient(colorClass) {
-    const gradients = {
-        'silver': '#c0c0c0 0%, #808080 100%',
-        'red': '#e63946 0%, #a4161a 100%',
-        'blue': '#4895ef 0%, #3a0ca3 100%',
-        'tropical': '#ffd60a 0%, #f77f00 100%',
-        'green': '#52b788 0%, #2d6a4f 100%',
-        'white': '#f8f9fa 0%, #adb5bd 100%'
-    };
-    return gradients[colorClass] || '#c0c0c0 0%, #808080 100%';
 }
 
 // Initialize the app
