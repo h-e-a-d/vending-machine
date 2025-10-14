@@ -100,40 +100,43 @@ function handleCanClick(canElement, product) {
 function confirmPurchase() {
     if (!selectedProduct || !selectedCanElement) return;
 
-    const row = parseInt(selectedCanElement.dataset.row);
-    const col = parseInt(selectedCanElement.dataset.col);
+    // Store references locally before clearing
+    const canElement = selectedCanElement;
+    const product = selectedProduct;
+    const row = parseInt(canElement.dataset.row);
+    const col = parseInt(canElement.dataset.col);
 
     // Check if can is already dropping or doesn't exist
-    if (!selectedCanElement || selectedCanElement.classList.contains('dropping')) {
+    if (!canElement || canElement.classList.contains('dropping')) {
         selectedProduct = null;
         selectedCanElement = null;
         updateDisplay();
         return;
     }
 
+    // Clear display immediately
+    selectedProduct = null;
+    selectedCanElement = null;
+    updateDisplay();
+
     // Animate spring rotation and push
-    animateSpringPush(selectedCanElement, () => {
+    animateSpringPush(canElement, () => {
         // Drop the can
-        selectedCanElement.classList.add('dropping');
+        canElement.classList.add('dropping');
 
         // Add to cart after animation completes
         setTimeout(() => {
-            addToCart(selectedProduct);
+            addToCart(product);
 
             // Remove the can from grid
             canGrid[row][col] = null;
-            selectedCanElement.remove();
+            canElement.remove();
 
             // Move remaining cans forward
             moveCanForward(row, col);
 
         }, 1200);
     });
-
-    // Clear display
-    selectedProduct = null;
-    selectedCanElement = null;
-    updateDisplay();
 }
 
 // Animate spring rotation and push the can forward
