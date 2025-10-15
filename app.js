@@ -2,6 +2,9 @@
 // VENDING MACHINE 3D APPLICATION
 // ================================
 
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
 // Scene, Camera, Renderer
 let scene, camera, renderer, controls;
 
@@ -66,7 +69,7 @@ function init() {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     // Controls
-    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
     controls.minDistance = 4;
@@ -275,7 +278,6 @@ function createShelvesAndProducts(machineGroup) {
 }
 
 function createCansOnShelf(machineGroup, shelfIndex, shelfY, itemsPerRow, itemsDeep, shelfWidth, shelfDepth) {
-    const canRadius = 0.033;
     const canHeight = 0.168;
     const spacingX = shelfWidth / itemsPerRow;
     const spacingZ = shelfDepth / itemsDeep;
@@ -466,8 +468,6 @@ function onPushButton() {
 }
 
 function animateDispensing() {
-    const product = dispensingCan.userData.product;
-
     // Step 1: Position and show sling
     const canWorldPos = new THREE.Vector3();
     dispensingCan.getWorldPosition(canWorldPos);
@@ -494,10 +494,8 @@ function animateDispensing() {
 }
 
 function animateCanFalling() {
-    let fallProgress = 0;
     const fallSpeed = 0.04;
     const targetY = 0.5; // Ground level + can height
-    const startY = dispensingCan.position.y;
 
     const fall = () => {
         if (dispensingCan.position.y > targetY) {
@@ -514,7 +512,6 @@ function animateCanFalling() {
 }
 
 function animateDoorOpening() {
-    let doorProgress = 0;
     const doorSpeed = 0.05;
     const targetRotation = -Math.PI / 2;
 
@@ -550,7 +547,6 @@ function animateCanOut() {
 
 function finishDispensing() {
     // Close door
-    let doorProgress = 0;
     const doorSpeed = 0.05;
 
     const closeDoor = () => {
@@ -615,7 +611,7 @@ function updateCartUI() {
     const cartItemsDiv = document.getElementById('cart-items');
     cartItemsDiv.innerHTML = '';
 
-    shoppingCart.forEach((product, index) => {
+    shoppingCart.forEach((product) => {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'cart-item';
         itemDiv.innerHTML = `
