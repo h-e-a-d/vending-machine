@@ -64,6 +64,14 @@
         <p>Loading Vending Machine...</p>
     </div>
 
+    <!-- Debug Info -->
+    <div id="debug-info" style="position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: #0f0; padding: 10px; font-family: monospace; font-size: 12px; border-radius: 5px; pointer-events: none; z-index: 9999;">
+        <div>FPS: <span id="fps">0</span></div>
+        <div>Cans: <span id="can-count">0</span></div>
+        <div>Scene Objects: <span id="scene-objects">0</span></div>
+        <div>Camera: <span id="camera-pos">0,0,0</span></div>
+    </div>
+
     <!-- Three.js as ES Module -->
     <script type="importmap">
         {

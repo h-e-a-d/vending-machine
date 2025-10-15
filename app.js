@@ -5,6 +5,9 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+// Debug mode
+const DEBUG = true;
+
 // Scene, Camera, Renderer
 let scene, camera, renderer, controls;
 
@@ -81,6 +84,29 @@ function init() {
     raycaster = new THREE.Raycaster();
     mouse = new THREE.Vector2();
 
+    // Debug helpers
+    if (DEBUG) {
+        const axesHelper = new THREE.AxesHelper(5);
+        scene.add(axesHelper);
+
+        const gridHelper = new THREE.GridHelper(10, 10);
+        scene.add(gridHelper);
+
+        // Add a test cube to verify rendering
+        const testCubeGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+        const testCubeMaterial = new THREE.MeshStandardMaterial({
+            color: 0x00ff00,
+            emissive: 0x00ff00,
+            emissiveIntensity: 0.5
+        });
+        const testCube = new THREE.Mesh(testCubeGeometry, testCubeMaterial);
+        testCube.position.set(2, 2, 0);
+        scene.add(testCube);
+
+        console.log('🔍 DEBUG MODE ENABLED');
+        console.log('✅ Test cube added at (2, 2, 0)');
+    }
+
     // Lights
     setupLights();
 
@@ -145,6 +171,8 @@ function setupLights() {
 
 function buildVendingMachine() {
     const machineGroup = new THREE.Group();
+
+    if (DEBUG) console.log('🏗️ Building vending machine...');
 
     // Machine body - main structure
     const bodyGeometry = new THREE.BoxGeometry(2.5, 4, 1.2);
@@ -234,6 +262,13 @@ function buildVendingMachine() {
     scene.add(machineGroup);
     vendingMachine.group = machineGroup;
 
+    if (DEBUG) {
+        console.log(`✅ Vending machine built`);
+        console.log(`📦 Total cans created: ${cans.length}`);
+        console.log(`📚 Total shelves: ${shelves.length}`);
+        console.log(`🎯 Scene children: ${scene.children.length}`);
+    }
+
     // Ground
     const groundGeometry = new THREE.PlaneGeometry(20, 20);
     const groundMaterial = new THREE.ShadowMaterial({ opacity: 0.3 });
@@ -284,6 +319,12 @@ function createCansOnShelf(machineGroup, shelfIndex, shelfY, itemsPerRow, itemsD
     const startX = -shelfWidth / 2 + spacingX / 2;
     const startZ = -shelfDepth / 2 + spacingZ / 2 + 0.2;
 
+    if (DEBUG && shelfIndex === 0) {
+        console.log(`📏 Shelf dimensions: width=${shelfWidth}, depth=${shelfDepth}`);
+        console.log(`📏 Spacing: X=${spacingX}, Z=${spacingZ}`);
+        console.log(`📏 Start position: X=${startX}, Z=${startZ}`);
+    }
+
     // Randomly assign products to create variety
     for (let row = 0; row < itemsPerRow; row++) {
         const product = products[row % products.length];
@@ -306,24 +347,30 @@ function createCansOnShelf(machineGroup, shelfIndex, shelfY, itemsPerRow, itemsD
 
             machineGroup.add(can);
             cans.push(can);
+
+            if (DEBUG && shelfIndex === 0 && row === 0 && depth === 0) {
+                console.log(`🥫 First can position: x=${x}, y=${shelfY + canHeight / 2 + 0.02}, z=${z}`);
+            }
         }
     }
 }
 
 function createCan(x, y, z, angleY, product, isInteractive) {
-    const canRadius = 0.033;
+    const canRadius = 0.065; // Increased from 0.033 - make cans bigger!
     const canHeight = 0.168;
 
     const canGroup = new THREE.Group();
     canGroup.position.set(x, y, z);
     canGroup.rotation.y = angleY;
 
-    // Can body
+    // Can body - Use bright colors to see them easily
     const canGeometry = new THREE.CylinderGeometry(canRadius, canRadius, canHeight, 16);
     const canMaterial = new THREE.MeshStandardMaterial({
-        color: 0x0066cc, // Blue-ish color for Red Bull
+        color: 0xff0000, // Bright red to make them visible
         metalness: 0.8,
-        roughness: 0.2
+        roughness: 0.2,
+        emissive: 0x440000,
+        emissiveIntensity: 0.2
     });
     const canMesh = new THREE.Mesh(canGeometry, canMaterial);
     canMesh.castShadow = true;
@@ -632,8 +679,29 @@ function updateCartUI() {
 // ANIMATION LOOP
 // ================================
 
+let lastTime = performance.now();
+let frames = 0;
+let fps = 0;
+
 function animate() {
     requestAnimationFrame(animate);
+
+    // FPS Counter
+    frames++;
+    const currentTime = performance.now();
+    if (currentTime >= lastTime + 1000) {
+        fps = frames;
+        frames = 0;
+        lastTime = currentTime;
+
+        if (DEBUG) {
+            document.getElementById('fps').textContent = fps;
+            document.getElementById('can-count').textContent = cans.length;
+            document.getElementById('scene-objects').textContent = scene.children.length;
+            document.getElementById('camera-pos').textContent =
+                `${camera.position.x.toFixed(1)}, ${camera.position.y.toFixed(1)}, ${camera.position.z.toFixed(1)}`;
+        }
+    }
 
     controls.update();
     renderer.render(scene, camera);
