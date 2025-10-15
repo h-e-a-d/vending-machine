@@ -3,13 +3,12 @@
 // ================================
 
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 // Debug mode
 const DEBUG = true;
 
 // Scene, Camera, Renderer
-let scene, camera, renderer, controls;
+let scene, camera, renderer;
 
 // Vending Machine Components
 let vendingMachine = {};
@@ -33,12 +32,12 @@ let dispensingCan = null;
 
 // Product Data
 const products = [
-    { name: 'Red Bull Original', price: 2.50, image: 'assets/200x0.webp' },
-    { name: 'Red Bull Sugarfree', price: 2.50, image: 'assets/200x0 (1).webp' },
-    { name: 'Red Bull Tropical', price: 2.75, image: 'assets/200x0 (2).webp' },
-    { name: 'Red Bull Watermelon', price: 2.75, image: 'assets/200x0 (3).webp' },
-    { name: 'Red Bull Coconut', price: 2.75, image: 'assets/200x0 (4).webp' },
-    { name: 'Red Bull Zero', price: 2.50, image: 'assets/196x0.webp' },
+    { name: 'Red Bull Original', price: 2.50, image: 'assets/200x0.webp', color: 0x0066cc },
+    { name: 'Red Bull Sugarfree', price: 2.50, image: 'assets/200x0 (1).webp', color: 0x999999 },
+    { name: 'Red Bull Tropical', price: 2.75, image: 'assets/200x0 (2).webp', color: 0xffaa00 },
+    { name: 'Red Bull Watermelon', price: 2.75, image: 'assets/200x0 (3).webp', color: 0xff1493 },
+    { name: 'Red Bull Coconut', price: 2.75, image: 'assets/200x0 (4).webp', color: 0xffffff },
+    { name: 'Red Bull Zero', price: 2.50, image: 'assets/196x0.webp', color: 0x222222 },
 ];
 
 // ================================
@@ -46,39 +45,36 @@ const products = [
 // ================================
 
 function init() {
+    console.log('🚀 Initializing Vending Machine...');
+
     // Scene
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x667eea);
-    scene.fog = new THREE.Fog(0x667eea, 10, 50);
+    scene.background = new THREE.Color(0xf0f0f0);
 
-    // Camera
+    // Camera - FIXED position, no rotation
     camera = new THREE.PerspectiveCamera(
-        50,
+        45,
         window.innerWidth / window.innerHeight,
         0.1,
         1000
     );
-    camera.position.set(0, 1.5, 6);
+    // Position camera directly in front of the vending machine
+    camera.position.set(0, 3, 8);
+    camera.lookAt(0, 3, 0);
+
+    console.log('📷 Camera positioned at:', camera.position);
 
     // Renderer
     renderer = new THREE.WebGLRenderer({
         canvas: document.getElementById('vendingCanvas'),
-        antialias: true,
-        alpha: true
+        antialias: true
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-    // Controls
-    controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.minDistance = 4;
-    controls.maxDistance = 10;
-    controls.maxPolarAngle = Math.PI / 2;
-    controls.target.set(0, 1.5, 0);
+    console.log('✅ Renderer initialized');
 
     // Raycaster for interaction
     raycaster = new THREE.Raycaster();
@@ -86,25 +82,11 @@ function init() {
 
     // Debug helpers
     if (DEBUG) {
+        // Axes helper
         const axesHelper = new THREE.AxesHelper(5);
         scene.add(axesHelper);
 
-        const gridHelper = new THREE.GridHelper(10, 10);
-        scene.add(gridHelper);
-
-        // Add a test cube to verify rendering
-        const testCubeGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-        const testCubeMaterial = new THREE.MeshStandardMaterial({
-            color: 0x00ff00,
-            emissive: 0x00ff00,
-            emissiveIntensity: 0.5
-        });
-        const testCube = new THREE.Mesh(testCubeGeometry, testCubeMaterial);
-        testCube.position.set(2, 2, 0);
-        scene.add(testCube);
-
         console.log('🔍 DEBUG MODE ENABLED');
-        console.log('✅ Test cube added at (2, 2, 0)');
     }
 
     // Lights
@@ -116,6 +98,7 @@ function init() {
     // Event Listeners
     window.addEventListener('resize', onWindowResize);
     window.addEventListener('click', onCanvasClick);
+    window.addEventListener('mousemove', onMouseMove);
     document.getElementById('confirm-btn').addEventListener('click', onConfirmPurchase);
     document.getElementById('cancel-btn').addEventListener('click', onCancelSelection);
     document.getElementById('push-button').addEventListener('click', onPushButton);
@@ -123,7 +106,8 @@ function init() {
     // Hide loading screen
     setTimeout(() => {
         document.getElementById('loading').classList.add('hidden');
-    }, 1000);
+        console.log('✅ Loading complete');
+    }, 500);
 
     // Start animation loop
     animate();
@@ -135,34 +119,36 @@ function init() {
 
 function setupLights() {
     // Ambient light
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
 
-    // Main directional light
+    // Main directional light (from front)
     const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    mainLight.position.set(5, 10, 7);
+    mainLight.position.set(0, 10, 10);
     mainLight.castShadow = true;
-    mainLight.shadow.camera.left = -5;
-    mainLight.shadow.camera.right = 5;
-    mainLight.shadow.camera.top = 5;
-    mainLight.shadow.camera.bottom = -5;
+    mainLight.shadow.camera.left = -10;
+    mainLight.shadow.camera.right = 10;
+    mainLight.shadow.camera.top = 10;
+    mainLight.shadow.camera.bottom = -10;
     mainLight.shadow.mapSize.width = 2048;
     mainLight.shadow.mapSize.height = 2048;
     scene.add(mainLight);
 
-    // Accent lights for drama
-    const accentLight1 = new THREE.SpotLight(0xffa500, 0.5);
-    accentLight1.position.set(-3, 3, 3);
-    scene.add(accentLight1);
-
-    const accentLight2 = new THREE.SpotLight(0x00ffff, 0.3);
-    accentLight2.position.set(3, 2, 3);
-    scene.add(accentLight2);
+    // Fill light from top
+    const topLight = new THREE.DirectionalLight(0xffffff, 0.4);
+    topLight.position.set(0, 10, 0);
+    scene.add(topLight);
 
     // Internal vending machine lights
-    const internalLight = new THREE.PointLight(0xffffff, 1, 5);
-    internalLight.position.set(0, 2, 0.3);
-    scene.add(internalLight);
+    const internalLight1 = new THREE.PointLight(0xffffff, 1, 10);
+    internalLight1.position.set(0, 4, 1);
+    scene.add(internalLight1);
+
+    const internalLight2 = new THREE.PointLight(0xffffff, 0.8, 10);
+    internalLight2.position.set(0, 2, 1);
+    scene.add(internalLight2);
+
+    console.log('💡 Lights added');
 }
 
 // ================================
@@ -170,110 +156,186 @@ function setupLights() {
 // ================================
 
 function buildVendingMachine() {
+    console.log('🏗️ Building vending machine...');
+
     const machineGroup = new THREE.Group();
+    machineGroup.position.set(0, 0, 0);
 
-    if (DEBUG) console.log('🏗️ Building vending machine...');
-
-    // Machine body - main structure
-    const bodyGeometry = new THREE.BoxGeometry(2.5, 4, 1.2);
-    const bodyMaterial = new THREE.MeshStandardMaterial({
-        color: 0xe0e0e0,
-        metalness: 0.3,
-        roughness: 0.6
+    // OUTER FRAME - Light gray/white
+    const outerFrameGeometry = new THREE.BoxGeometry(5, 7, 1.5);
+    const outerFrameMaterial = new THREE.MeshStandardMaterial({
+        color: 0xe8e8e8,
+        metalness: 0.2,
+        roughness: 0.7
     });
-    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-    body.position.set(0, 2, 0);
-    body.castShadow = true;
-    body.receiveShadow = true;
-    machineGroup.add(body);
-    vendingMachine.body = body;
+    const outerFrame = new THREE.Mesh(outerFrameGeometry, outerFrameMaterial);
+    outerFrame.position.set(0, 3.5, 0);
+    outerFrame.castShadow = true;
+    outerFrame.receiveShadow = true;
+    machineGroup.add(outerFrame);
 
-    // Glass/Display area
-    const glassGeometry = new THREE.BoxGeometry(2.2, 3.2, 0.1);
+    // GLASS DISPLAY AREA (left side - 60% width)
+    const glassWidth = 2.8;
+    const glassHeight = 5;
+    const glassGeometry = new THREE.BoxGeometry(glassWidth, glassHeight, 0.1);
     const glassMaterial = new THREE.MeshPhysicalMaterial({
-        color: 0x88ccff,
+        color: 0xffffff,
         transparent: true,
-        opacity: 0.3,
-        metalness: 0.1,
+        opacity: 0.15,
+        metalness: 0,
         roughness: 0.1,
-        transmission: 0.9,
-        thickness: 0.5
+        transmission: 0.95,
+        thickness: 0.1
     });
     const glass = new THREE.Mesh(glassGeometry, glassMaterial);
-    glass.position.set(0, 2.2, 0.56);
+    glass.position.set(-0.6, 4, 0.76);
     machineGroup.add(glass);
 
-    // Glass frame
-    const frameGeometry = new THREE.BoxGeometry(2.3, 3.3, 0.15);
+    // GLASS FRAME
+    const frameThickness = 0.08;
     const frameMaterial = new THREE.MeshStandardMaterial({
-        color: 0xcccccc,
+        color: 0xd0d0d0,
         metalness: 0.5,
         roughness: 0.3
     });
-    const frame = new THREE.Mesh(frameGeometry, frameMaterial);
-    frame.position.set(0, 2.2, 0.55);
-    machineGroup.add(frame);
 
-    // Orange bottom section
-    const bottomGeometry = new THREE.BoxGeometry(2.5, 0.8, 1.2);
-    const bottomMaterial = new THREE.MeshStandardMaterial({
-        color: 0xff8c00,
-        metalness: 0.2,
-        roughness: 0.5
+    // Top frame
+    const topFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(glassWidth + frameThickness, frameThickness, 0.15),
+        frameMaterial
+    );
+    topFrame.position.set(-0.6, 4 + glassHeight / 2, 0.76);
+    machineGroup.add(topFrame);
+
+    // Bottom frame
+    const bottomFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(glassWidth + frameThickness, frameThickness, 0.15),
+        frameMaterial
+    );
+    bottomFrame.position.set(-0.6, 4 - glassHeight / 2, 0.76);
+    machineGroup.add(bottomFrame);
+
+    // Left frame
+    const leftFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(frameThickness, glassHeight, 0.15),
+        frameMaterial
+    );
+    leftFrame.position.set(-0.6 - glassWidth / 2, 4, 0.76);
+    machineGroup.add(leftFrame);
+
+    // Right frame
+    const rightFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(frameThickness, glassHeight, 0.15),
+        frameMaterial
+    );
+    rightFrame.position.set(-0.6 + glassWidth / 2, 4, 0.76);
+    machineGroup.add(rightFrame);
+
+    // INTERIOR BACKGROUND (white/light)
+    const interiorGeometry = new THREE.BoxGeometry(glassWidth - 0.1, glassHeight - 0.1, 0.5);
+    const interiorMaterial = new THREE.MeshStandardMaterial({
+        color: 0xf5f5f5,
+        metalness: 0.1,
+        roughness: 0.8
     });
-    const bottom = new THREE.Mesh(bottomGeometry, bottomMaterial);
-    bottom.position.set(0, 0.4, 0);
-    bottom.castShadow = true;
-    machineGroup.add(bottom);
+    const interior = new THREE.Mesh(interiorGeometry, interiorMaterial);
+    interior.position.set(-0.6, 4, 0.4);
+    machineGroup.add(interior);
 
-    // Dispensing slot
-    const slotGeometry = new THREE.BoxGeometry(0.4, 0.3, 0.2);
+    // RIGHT SIDE PANEL (light gray)
+    const rightPanelGeometry = new THREE.BoxGeometry(1.8, 5, 1.4);
+    const rightPanelMaterial = new THREE.MeshStandardMaterial({
+        color: 0xdcdcdc,
+        metalness: 0.2,
+        roughness: 0.7
+    });
+    const rightPanel = new THREE.Mesh(rightPanelGeometry, rightPanelMaterial);
+    rightPanel.position.set(1.6, 4, 0);
+    machineGroup.add(rightPanel);
+
+    // ORANGE BOTTOM SECTION
+    const bottomHeight = 1.2;
+    const bottomOrangeGeometry = new THREE.BoxGeometry(3.5, bottomHeight, 1.4);
+    const bottomOrangeMaterial = new THREE.MeshStandardMaterial({
+        color: 0xff8c00,
+        metalness: 0.3,
+        roughness: 0.6
+    });
+    const bottomOrange = new THREE.Mesh(bottomOrangeGeometry, bottomOrangeMaterial);
+    bottomOrange.position.set(-0.4, bottomHeight / 2 + 0.2, 0);
+    machineGroup.add(bottomOrange);
+
+    // DARKER ORANGE SECTION (right side of bottom)
+    const darkOrangeGeometry = new THREE.BoxGeometry(1.2, bottomHeight, 1.4);
+    const darkOrangeMaterial = new THREE.MeshStandardMaterial({
+        color: 0xff6600,
+        metalness: 0.3,
+        roughness: 0.6
+    });
+    const darkOrange = new THREE.Mesh(darkOrangeGeometry, darkOrangeMaterial);
+    darkOrange.position.set(1.8, bottomHeight / 2 + 0.2, 0);
+    machineGroup.add(darkOrange);
+
+    // DISPENSING SLOT (dark)
+    const slotGeometry = new THREE.BoxGeometry(0.5, 0.35, 0.3);
     const slotMaterial = new THREE.MeshStandardMaterial({
-        color: 0x222222
+        color: 0x222222,
+        metalness: 0.3,
+        roughness: 0.7
     });
     const slot = new THREE.Mesh(slotGeometry, slotMaterial);
-    slot.position.set(0, 0.4, 0.7);
+    slot.position.set(-0.4, 0.9, 0.8);
     machineGroup.add(slot);
     vendingMachine.slot = slot;
 
-    // Door (initially closed)
+    // DOOR for slot
     doorPivot = new THREE.Group();
-    doorPivot.position.set(-0.2, 0.4, 0.7);
+    doorPivot.position.set(-0.65, 0.9, 0.9);
 
-    const doorGeometry = new THREE.BoxGeometry(0.4, 0.3, 0.05);
+    const doorGeometry = new THREE.BoxGeometry(0.5, 0.35, 0.05);
     const doorMaterial = new THREE.MeshStandardMaterial({
         color: 0x333333,
-        metalness: 0.6,
-        roughness: 0.4
+        metalness: 0.5,
+        roughness: 0.5
     });
     door = new THREE.Mesh(doorGeometry, doorMaterial);
-    door.position.x = 0.2;
+    door.position.x = 0.25;
     doorPivot.add(door);
     machineGroup.add(doorPivot);
     vendingMachine.door = doorPivot;
 
+    // MACHINE BASE (gray feet)
+    const baseGeometry = new THREE.BoxGeometry(5, 0.3, 1.5);
+    const baseMaterial = new THREE.MeshStandardMaterial({
+        color: 0x888888,
+        metalness: 0.4,
+        roughness: 0.6
+    });
+    const base = new THREE.Mesh(baseGeometry, baseMaterial);
+    base.position.set(0, 0.15, 0);
+    base.castShadow = true;
+    machineGroup.add(base);
+
     // Create shelves and products
     createShelvesAndProducts(machineGroup);
 
-    // Create sling mechanism (hidden initially)
+    // Create sling mechanism
     createSling(machineGroup);
 
     // Add machine to scene
     scene.add(machineGroup);
     vendingMachine.group = machineGroup;
 
-    if (DEBUG) {
-        console.log(`✅ Vending machine built`);
-        console.log(`📦 Total cans created: ${cans.length}`);
-        console.log(`📚 Total shelves: ${shelves.length}`);
-        console.log(`🎯 Scene children: ${scene.children.length}`);
-    }
+    console.log(`✅ Vending machine built`);
+    console.log(`📦 Total cans created: ${cans.length}`);
+    console.log(`📚 Total shelves: ${shelves.length}`);
 
     // Ground
-    const groundGeometry = new THREE.PlaneGeometry(20, 20);
-    const groundMaterial = new THREE.ShadowMaterial({ opacity: 0.3 });
+    const groundGeometry = new THREE.PlaneGeometry(50, 50);
+    const groundMaterial = new THREE.ShadowMaterial({ opacity: 0.2 });
     const ground = new THREE.Mesh(groundGeometry, groundMaterial);
     ground.rotation.x = -Math.PI / 2;
+    ground.position.y = 0;
     ground.receiveShadow = true;
     scene.add(ground);
 }
@@ -287,45 +349,55 @@ function createShelvesAndProducts(machineGroup) {
     const itemsPerRow = 9;
     const itemsDeep = 6;
 
-    const shelfWidth = 2.0;
-    const shelfHeight = 0.52; // Spacing between shelves
-    const shelfDepth = 0.7;
-    const startY = 3.6; // Top shelf Y position
+    const displayWidth = 2.6; // Width of the display area
+    const displayDepth = 0.6;
+    const shelfSpacing = 0.75; // Vertical spacing between shelves
+    const startY = 6.2; // Top shelf Y position
+    const startX = -0.6; // Center X of display area
+
+    console.log('🏗️ Creating shelves and products...');
+    console.log(`   Display area: width=${displayWidth}, depth=${displayDepth}`);
+    console.log(`   Shelves: ${shelfCount}, Items per row: ${itemsPerRow}, Depth: ${itemsDeep}`);
 
     for (let shelfIndex = 0; shelfIndex < shelfCount; shelfIndex++) {
-        const shelfY = startY - (shelfIndex * shelfHeight);
+        const shelfY = startY - (shelfIndex * shelfSpacing);
 
         // Create shelf platform
-        const shelfGeometry = new THREE.BoxGeometry(shelfWidth, 0.02, shelfDepth);
+        const shelfGeometry = new THREE.BoxGeometry(displayWidth, 0.03, displayDepth);
         const shelfMaterial = new THREE.MeshStandardMaterial({
-            color: 0xdddddd,
-            metalness: 0.4,
-            roughness: 0.6
+            color: 0xcccccc,
+            metalness: 0.3,
+            roughness: 0.7
         });
         const shelf = new THREE.Mesh(shelfGeometry, shelfMaterial);
-        shelf.position.set(0, shelfY, 0.2);
+        shelf.position.set(startX, shelfY, 0.4);
         machineGroup.add(shelf);
         shelves.push(shelf);
 
+        console.log(`   Shelf ${shelfIndex}: Y=${shelfY.toFixed(2)}`);
+
         // Create cans on this shelf
-        createCansOnShelf(machineGroup, shelfIndex, shelfY, itemsPerRow, itemsDeep, shelfWidth, shelfDepth);
+        createCansOnShelf(machineGroup, shelfIndex, shelfY, itemsPerRow, itemsDeep, displayWidth, displayDepth, startX);
     }
 }
 
-function createCansOnShelf(machineGroup, shelfIndex, shelfY, itemsPerRow, itemsDeep, shelfWidth, shelfDepth) {
-    const canHeight = 0.168;
-    const spacingX = shelfWidth / itemsPerRow;
-    const spacingZ = shelfDepth / itemsDeep;
-    const startX = -shelfWidth / 2 + spacingX / 2;
-    const startZ = -shelfDepth / 2 + spacingZ / 2 + 0.2;
+function createCansOnShelf(machineGroup, shelfIndex, shelfY, itemsPerRow, itemsDeep, displayWidth, displayDepth, centerX) {
+    const canRadius = 0.065;
+    const canHeight = 0.15;
+    const spacingX = displayWidth / itemsPerRow;
+    const spacingZ = displayDepth / itemsDeep;
+    const startX = centerX - displayWidth / 2 + spacingX / 2;
+    const startZ = 0.1; // Start from back
 
     if (DEBUG && shelfIndex === 0) {
-        console.log(`📏 Shelf dimensions: width=${shelfWidth}, depth=${shelfDepth}`);
-        console.log(`📏 Spacing: X=${spacingX}, Z=${spacingZ}`);
-        console.log(`📏 Start position: X=${startX}, Z=${startZ}`);
+        console.log(`🥫 Can configuration:`);
+        console.log(`   Can size: radius=${canRadius}, height=${canHeight}`);
+        console.log(`   Spacing: X=${spacingX.toFixed(3)}, Z=${spacingZ.toFixed(3)}`);
+        console.log(`   Start position: X=${startX.toFixed(2)}, Z=${startZ.toFixed(2)}`);
     }
 
-    // Randomly assign products to create variety
+    let canCounter = 0;
+
     for (let row = 0; row < itemsPerRow; row++) {
         const product = products[row % products.length];
 
@@ -335,45 +407,62 @@ function createCansOnShelf(machineGroup, shelfIndex, shelfY, itemsPerRow, itemsD
 
             const x = startX + row * spacingX;
             const z = startZ + depth * spacingZ;
+            const y = shelfY + canHeight / 2 + 0.02;
 
             // Add perspective: cans on edges are slightly angled
-            const angleY = (row - (itemsPerRow - 1) / 2) * 0.08; // Rotate based on position
-            const offsetX = (row - (itemsPerRow - 1) / 2) * 0.005; // Slight X offset for perspective
+            const centerRow = (itemsPerRow - 1) / 2;
+            const distanceFromCenter = row - centerRow;
+            const angleY = distanceFromCenter * 0.05; // Slight rotation
+            const offsetX = distanceFromCenter * 0.002; // Slight X offset
 
-            const can = createCan(x + offsetX, shelfY + canHeight / 2 + 0.02, z, angleY, product, isInteractive);
-            can.userData.shelfIndex = shelfIndex;
-            can.userData.row = row;
-            can.userData.depth = depth;
+            const can = createCan(
+                x + offsetX,
+                y,
+                z,
+                angleY,
+                product,
+                isInteractive,
+                shelfIndex,
+                row,
+                depth
+            );
 
             machineGroup.add(can);
             cans.push(can);
+            canCounter++;
 
+            // Log first can
             if (DEBUG && shelfIndex === 0 && row === 0 && depth === 0) {
-                console.log(`🥫 First can position: x=${x}, y=${shelfY + canHeight / 2 + 0.02}, z=${z}`);
+                console.log(`🥫 First can created at: (${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)})`);
             }
         }
     }
+
+    if (DEBUG && shelfIndex === 0) {
+        console.log(`   Created ${canCounter} cans on shelf 0`);
+    }
 }
 
-function createCan(x, y, z, angleY, product, isInteractive) {
-    const canRadius = 0.065; // Increased from 0.033 - make cans bigger!
-    const canHeight = 0.168;
+function createCan(x, y, z, angleY, product, isInteractive, shelfIndex, row, depth) {
+    const canRadius = 0.065;
+    const canHeight = 0.15;
 
     const canGroup = new THREE.Group();
     canGroup.position.set(x, y, z);
     canGroup.rotation.y = angleY;
 
-    // Can body - Use bright colors to see them easily
+    // Can body - Use product color
     const canGeometry = new THREE.CylinderGeometry(canRadius, canRadius, canHeight, 16);
     const canMaterial = new THREE.MeshStandardMaterial({
-        color: 0xff0000, // Bright red to make them visible
-        metalness: 0.8,
-        roughness: 0.2,
-        emissive: 0x440000,
-        emissiveIntensity: 0.2
+        color: product.color,
+        metalness: 0.7,
+        roughness: 0.3,
+        emissive: product.color,
+        emissiveIntensity: 0.1
     });
     const canMesh = new THREE.Mesh(canGeometry, canMaterial);
     canMesh.castShadow = true;
+    canMesh.receiveShadow = true;
     canGroup.add(canMesh);
 
     // Can top (silver)
@@ -391,6 +480,14 @@ function createCan(x, y, z, angleY, product, isInteractive) {
     canGroup.userData.product = product;
     canGroup.userData.isInteractive = isInteractive;
     canGroup.userData.isCan = true;
+    canGroup.userData.shelfIndex = shelfIndex;
+    canGroup.userData.row = row;
+    canGroup.userData.depth = depth;
+
+    // Make interactive cans glow slightly
+    if (isInteractive) {
+        canMaterial.emissiveIntensity = 0.2;
+    }
 
     return canGroup;
 }
@@ -401,9 +498,8 @@ function createCan(x, y, z, angleY, product, isInteractive) {
 
 function createSling(machineGroup) {
     slingPivot = new THREE.Group();
-    slingPivot.position.set(0, 0, 0); // Will be positioned dynamically
 
-    const slingGeometry = new THREE.BoxGeometry(0.15, 0.02, 0.5);
+    const slingGeometry = new THREE.BoxGeometry(0.08, 0.02, 0.4);
     const slingMaterial = new THREE.MeshStandardMaterial({
         color: 0x444444,
         metalness: 0.5,
@@ -412,29 +508,58 @@ function createSling(machineGroup) {
     sling = new THREE.Mesh(slingGeometry, slingMaterial);
     slingPivot.add(sling);
 
-    slingPivot.visible = false; // Hidden until needed
+    slingPivot.visible = false;
     machineGroup.add(slingPivot);
     vendingMachine.sling = slingPivot;
+
+    console.log('🔧 Sling mechanism created');
 }
 
 // ================================
 // INTERACTION
 // ================================
 
+function onMouseMove(event) {
+    // Update mouse position for raycasting
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+}
+
 function onCanvasClick(event) {
-    if (isAnimating) return;
+    if (isAnimating) {
+        console.log('❌ Click ignored - animation in progress');
+        return;
+    }
+
+    // Skip if clicking on UI elements
+    const target = event.target;
+    if (target.tagName !== 'CANVAS') {
+        console.log('❌ Click on UI element, not canvas');
+        return;
+    }
+
+    console.log('🖱️ Canvas clicked at:', event.clientX, event.clientY);
 
     // Calculate mouse position in normalized device coordinates
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-    // Update the picking ray with the camera and mouse position
+    console.log('📍 Normalized mouse:', mouse.x.toFixed(3), mouse.y.toFixed(3));
+
+    // Update the picking ray
     raycaster.setFromCamera(mouse, camera);
 
-    // Calculate objects intersecting the picking ray
+    // Check intersections with cans
     const intersects = raycaster.intersectObjects(cans, true);
 
+    console.log(`🎯 Raycaster found ${intersects.length} intersections`);
+
     if (intersects.length > 0) {
+        console.log('   First 3 intersections:');
+        intersects.slice(0, 3).forEach((hit, i) => {
+            console.log(`   ${i + 1}. Distance: ${hit.distance.toFixed(2)}, Object:`, hit.object);
+        });
+
         let targetCan = intersects[0].object;
 
         // Traverse up to find the can group
@@ -442,13 +567,32 @@ function onCanvasClick(event) {
             targetCan = targetCan.parent;
         }
 
-        if (targetCan && targetCan.userData.isInteractive && targetCan.userData.isCan) {
-            selectCan(targetCan);
+        if (targetCan && targetCan.userData.isCan) {
+            console.log('✅ Can found!');
+            console.log('   Product:', targetCan.userData.product.name);
+            console.log('   Interactive:', targetCan.userData.isInteractive);
+            console.log('   Position: shelf', targetCan.userData.shelfIndex, 'row', targetCan.userData.row, 'depth', targetCan.userData.depth);
+
+            if (targetCan.userData.isInteractive) {
+                selectCan(targetCan);
+            } else {
+                console.log('⚠️ Can is not in front row (not interactive)');
+            }
         }
+    } else {
+        console.log('❌ No cans hit by raycaster');
     }
 }
 
 function selectCan(can) {
+    console.log('🎯 Selecting can:', can.userData.product.name);
+
+    // Reset previous selection
+    if (selectedCan && selectedCan !== can) {
+        console.log('   Resetting previous selection');
+        selectedCan.children[0].material.emissiveIntensity = 0.2;
+    }
+
     selectedCan = can;
     const product = can.userData.product;
 
@@ -461,19 +605,17 @@ function selectCan(can) {
     document.getElementById('product-name').textContent = product.name;
     document.getElementById('product-price').textContent = `$${product.price.toFixed(2)}`;
 
-    // Visual feedback - make can glow slightly
-    if (can.userData.originalEmissive === undefined) {
-        can.userData.originalEmissive = can.children[0].material.emissive.clone();
-    }
-    can.children[0].material.emissive.setHex(0x224466);
+    // Visual feedback - make can glow
     can.children[0].material.emissiveIntensity = 0.5;
+
+    console.log('✅ Can selected and UI updated');
 }
 
 function onCancelSelection() {
+    console.log('❌ Selection cancelled');
+
     if (selectedCan) {
-        // Reset can appearance
-        selectedCan.children[0].material.emissive.copy(selectedCan.userData.originalEmissive || new THREE.Color(0x000000));
-        selectedCan.children[0].material.emissiveIntensity = 0;
+        selectedCan.children[0].material.emissiveIntensity = 0.2;
         selectedCan = null;
     }
 
@@ -484,7 +626,12 @@ function onCancelSelection() {
 }
 
 function onConfirmPurchase() {
-    if (!selectedCan) return;
+    if (!selectedCan) {
+        console.log('❌ No can selected to confirm');
+        return;
+    }
+
+    console.log('✅ Purchase confirmed for:', selectedCan.userData.product.name);
 
     confirmedCan = selectedCan;
 
@@ -497,6 +644,8 @@ function onConfirmPurchase() {
     screenContent.innerHTML = '<h2>Ready!</h2><p>Press PUSH to dispense</p>';
 
     document.getElementById('selected-product').classList.add('hidden');
+
+    console.log('🟢 PUSH button enabled');
 }
 
 // ================================
@@ -504,7 +653,13 @@ function onConfirmPurchase() {
 // ================================
 
 function onPushButton() {
-    if (!confirmedCan || isAnimating) return;
+    if (!confirmedCan || isAnimating) {
+        console.log('❌ Cannot dispense - confirmedCan:', !!confirmedCan, 'isAnimating:', isAnimating);
+        return;
+    }
+
+    console.log('🔴 PUSH button pressed!');
+    console.log('   Dispensing:', confirmedCan.userData.product.name);
 
     isAnimating = true;
     dispensingCan = confirmedCan;
@@ -515,14 +670,18 @@ function onPushButton() {
 }
 
 function animateDispensing() {
+    console.log('🎬 Starting dispensing animation...');
+
     // Step 1: Position and show sling
     const canWorldPos = new THREE.Vector3();
     dispensingCan.getWorldPosition(canWorldPos);
 
+    console.log('   Sling positioned at:', canWorldPos);
+
     slingPivot.position.copy(canWorldPos);
     slingPivot.visible = true;
 
-    // Step 2: Rotate sling (pushing can)
+    // Step 2: Rotate sling
     let rotationProgress = 0;
     const rotationSpeed = 0.05;
 
@@ -532,7 +691,7 @@ function animateDispensing() {
             rotationProgress += rotationSpeed;
             requestAnimationFrame(rotateSling);
         } else {
-            // Step 3: Can falls
+            console.log('   ✅ Sling rotation complete');
             animateCanFalling();
         }
     };
@@ -541,16 +700,18 @@ function animateDispensing() {
 }
 
 function animateCanFalling() {
+    console.log('   📉 Can falling...');
+
     const fallSpeed = 0.04;
-    const targetY = 0.5; // Ground level + can height
+    const targetY = 1.0;
 
     const fall = () => {
         if (dispensingCan.position.y > targetY) {
             dispensingCan.position.y -= fallSpeed;
-            dispensingCan.rotation.x += 0.1; // Tumble effect
+            dispensingCan.rotation.x += 0.1;
             requestAnimationFrame(fall);
         } else {
-            // Step 4: Open door
+            console.log('   ✅ Can reached bottom');
             animateDoorOpening();
         }
     };
@@ -559,6 +720,8 @@ function animateCanFalling() {
 }
 
 function animateDoorOpening() {
+    console.log('   🚪 Opening door...');
+
     const doorSpeed = 0.05;
     const targetRotation = -Math.PI / 2;
 
@@ -567,7 +730,7 @@ function animateDoorOpening() {
             doorPivot.rotation.z -= doorSpeed;
             requestAnimationFrame(openDoor);
         } else {
-            // Step 5: Move can out
+            console.log('   ✅ Door opened');
             animateCanOut();
         }
     };
@@ -576,15 +739,17 @@ function animateDoorOpening() {
 }
 
 function animateCanOut() {
+    console.log('   ➡️ Moving can out...');
+
     const moveSpeed = 0.03;
-    const targetZ = 1.5;
+    const targetZ = 2.0;
 
     const moveOut = () => {
         if (dispensingCan.position.z < targetZ) {
             dispensingCan.position.z += moveSpeed;
             requestAnimationFrame(moveOut);
         } else {
-            // Step 6: Close door and finalize
+            console.log('   ✅ Can dispensed');
             finishDispensing();
         }
     };
@@ -593,7 +758,8 @@ function animateCanOut() {
 }
 
 function finishDispensing() {
-    // Close door
+    console.log('   🚪 Closing door...');
+
     const doorSpeed = 0.05;
 
     const closeDoor = () => {
@@ -602,6 +768,7 @@ function finishDispensing() {
             requestAnimationFrame(closeDoor);
         } else {
             doorPivot.rotation.z = 0;
+            console.log('   ✅ Door closed');
             completePurchase();
         }
     };
@@ -610,6 +777,8 @@ function finishDispensing() {
 }
 
 function completePurchase() {
+    console.log('✅ Purchase complete!');
+
     // Add to cart
     const product = dispensingCan.userData.product;
     addToCart(product);
@@ -618,6 +787,7 @@ function completePurchase() {
     const canIndex = cans.indexOf(dispensingCan);
     if (canIndex > -1) {
         cans.splice(canIndex, 1);
+        console.log('   Removed can from array. Remaining:', cans.length);
     }
     scene.remove(dispensingCan);
 
@@ -636,6 +806,7 @@ function completePurchase() {
 
     setTimeout(() => {
         document.getElementById('screen-content').innerHTML = '<h2>Select a Product</h2><p>Click on any can to see details</p>';
+        console.log('🔄 Ready for next purchase');
     }, 2000);
 }
 
@@ -644,10 +815,14 @@ function completePurchase() {
 // ================================
 
 function addToCart(product) {
+    console.log('🛒 Adding to cart:', product.name, '$' + product.price);
+
     shoppingCart.push(product);
     cartTotal += product.price;
 
     updateCartUI();
+
+    console.log('   Cart total:', shoppingCart.length, 'items, $' + cartTotal.toFixed(2));
 }
 
 function updateCartUI() {
@@ -703,7 +878,6 @@ function animate() {
         }
     }
 
-    controls.update();
     renderer.render(scene, camera);
 }
 
@@ -715,10 +889,13 @@ function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+
+    console.log('📐 Window resized:', window.innerWidth, 'x', window.innerHeight);
 }
 
 // ================================
 // START APPLICATION
 // ================================
 
+console.log('🚀 Starting application...');
 init();
