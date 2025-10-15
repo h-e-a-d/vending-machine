@@ -869,9 +869,15 @@ body {
         text-align: left;
     }
 
+    /* FIXED: Keep 10 columns to match JavaScript grid generation
+       Only reduce visual size, don't change column count */
     .cans-grid {
-        grid-template-columns: repeat(5, 1fr);
-        grid-template-rows: repeat(12, 1fr);
+        height: 400px; /* Reduce height for mobile */
+    }
+
+    /* Make cans smaller on mobile */
+    .can {
+        transform: scale(0.85);
     }
 
     .shopping-cart {
