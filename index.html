@@ -3,86 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VendLIFE - 3D Vending Machine</title>
+    <title>VendLIFE - Vending Machine</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- 3D Canvas -->
-    <canvas id="vendingCanvas"></canvas>
-
-    <!-- UI Overlay -->
-    <div id="ui-overlay">
-        <!-- Vending Machine Screen -->
-        <div id="vending-screen" class="screen">
-            <div class="screen-header">
-                <div class="logo">VendLIFE</div>
-                <div class="robot-icon">🤖</div>
-            </div>
-            <div id="screen-content" class="screen-content">
-                <h2>Select a Product</h2>
-                <p>Click on any can to see details</p>
-            </div>
-            <div id="selected-product" class="selected-product hidden">
-                <img id="product-image" src="" alt="Product">
-                <div class="product-info">
-                    <h3 id="product-name">Red Bull Energy Drink</h3>
-                    <p id="product-price">$2.50</p>
-                    <button id="confirm-btn" class="confirm-btn">CONFIRM PURCHASE</button>
-                    <button id="cancel-btn" class="cancel-btn">CANCEL</button>
+    <!-- Vending Machine Container -->
+    <div class="vending-machine">
+        <!-- Left Section - Product Display -->
+        <div class="display-section">
+            <!-- Glass Frame -->
+            <div class="glass-frame">
+                <!-- Interior with shelves -->
+                <div class="interior">
+                    <!-- 6 Shelves -->
+                    <div class="shelf" id="shelf-0"></div>
+                    <div class="shelf" id="shelf-1"></div>
+                    <div class="shelf" id="shelf-2"></div>
+                    <div class="shelf" id="shelf-3"></div>
+                    <div class="shelf" id="shelf-4"></div>
+                    <div class="shelf" id="shelf-5"></div>
                 </div>
             </div>
         </div>
 
-        <!-- Control Panel -->
-        <div id="control-panel">
+        <!-- Right Section - Screen & Controls -->
+        <div class="control-section">
+            <!-- Top Logo -->
+            <div class="logo-area">
+                <h1 class="logo">VendLIFE</h1>
+                <div class="robot-icon">🤖</div>
+            </div>
+
+            <!-- Screen -->
+            <div class="screen">
+                <div id="screen-content" class="screen-content">
+                    <h2>Select a Product</h2>
+                    <p>Click on any can to see details</p>
+                </div>
+                <div id="selected-product" class="selected-product hidden">
+                    <img id="product-image" src="" alt="Product">
+                    <div class="product-info">
+                        <h3 id="product-name">Red Bull Energy Drink</h3>
+                        <p id="product-price">$2.50</p>
+                        <button id="confirm-btn" class="confirm-btn">CONFIRM</button>
+                        <button id="cancel-btn" class="cancel-btn">CANCEL</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orange Panel with Icons -->
+            <div class="orange-panel">
+                <div class="grape-icon">🍇</div>
+                <div class="smile-icon">😊<br>SMILE<br>TO PAY</div>
+                <div class="coin-slot"></div>
+            </div>
+        </div>
+
+        <!-- Bottom Section - Orange -->
+        <div class="bottom-section">
+            <!-- Push Button -->
             <button id="push-button" class="push-button" disabled>
                 <span>PUSH</span>
             </button>
-            <div class="payment-icons">
-                <div class="icon">💳</div>
-                <div class="icon">📱</div>
-            </div>
-        </div>
 
-        <!-- Shopping Cart -->
-        <div id="shopping-cart" class="cart">
-            <div class="cart-header">
-                <h3>🛒 Cart</h3>
-                <span id="cart-count" class="cart-count">0</span>
-            </div>
-            <div id="cart-items" class="cart-items"></div>
-            <div class="cart-total">
-                <strong>Total:</strong>
-                <span id="cart-total-price">$0.00</span>
+            <!-- Dispensing Area -->
+            <div class="dispense-slot">
+                <div class="door" id="door"></div>
             </div>
         </div>
     </div>
 
-    <!-- Loading Screen -->
-    <div id="loading" class="loading">
-        <div class="spinner"></div>
-        <p>Loading Vending Machine...</p>
+    <!-- Shopping Cart -->
+    <div id="shopping-cart" class="cart">
+        <div class="cart-header">
+            <h3>🛒 Cart</h3>
+            <span id="cart-count" class="cart-count">0</span>
+        </div>
+        <div id="cart-items" class="cart-items"></div>
+        <div class="cart-total">
+            <strong>Total:</strong>
+            <span id="cart-total-price">$0.00</span>
+        </div>
     </div>
 
-    <!-- Debug Info -->
-    <div id="debug-info" style="position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: #0f0; padding: 10px; font-family: monospace; font-size: 12px; border-radius: 5px; pointer-events: none; z-index: 9999;">
-        <div>FPS: <span id="fps">0</span></div>
-        <div>Cans: <span id="can-count">0</span></div>
-        <div>Scene Objects: <span id="scene-objects">0</span></div>
-        <div>Camera: <span id="camera-pos">0,0,0</span></div>
+    <!-- Debug Console -->
+    <div id="debug-console" class="debug-console">
+        <div class="debug-header">🔍 Debug Console</div>
+        <div id="debug-log" class="debug-log"></div>
     </div>
 
-    <!-- Three.js as ES Module -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-            }
-        }
-    </script>
-
-    <!-- Main Application -->
-    <script type="module" src="app.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
