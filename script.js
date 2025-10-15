@@ -30,21 +30,27 @@ const VendingMachine = (function() {
     function initVendingMachine() {
         const cansGrid = document.getElementById('cans-grid');
 
-        // Initialize 3D array for tracking cans: 6 shelves x 10 columns x 3 depth rows
-        canGrid = Array(6).fill(null).map(() =>
-            Array(10).fill(null).map(() =>
-                Array(3).fill(null)
+        // NEW: 6 shelves x 5 rows per shelf x 5 depth (front to back)
+        // Each shelf has 5 horizontal rows of cans
+        const SHELVES = 6;
+        const ROWS_PER_SHELF = 5;
+        const DEPTH = 5; // cans behind each other
+
+        // Initialize 3D array: [shelf][row][depth]
+        canGrid = Array(SHELVES).fill(null).map(() =>
+            Array(ROWS_PER_SHELF).fill(null).map(() =>
+                Array(DEPTH).fill(null)
             )
         );
 
-        // Create 6 shelves x 10 columns x 3 depth rows = 180 cans
-        for (let shelf = 0; shelf < 6; shelf++) {
+        // Create cans: 6 shelves x 5 rows x 5 depth = 150 cans
+        for (let shelf = 0; shelf < SHELVES; shelf++) {
             const product = products[shelf];
-            for (let depth = 2; depth >= 0; depth--) { // Back to front (for proper z-index)
-                for (let col = 0; col < 10; col++) {
-                    const can = createCan(product, shelf, col, depth);
+            for (let row = 0; row < ROWS_PER_SHELF; row++) {
+                for (let depth = DEPTH - 1; depth >= 0; depth--) { // Back to front
+                    const can = createCan(product, shelf, row, depth);
                     cansGrid.appendChild(can);
-                    canGrid[shelf][col][depth] = can;
+                    canGrid[shelf][row][depth] = can;
                 }
             }
         }
@@ -97,14 +103,18 @@ const VendingMachine = (function() {
         });
     }
 
-    // Create a single can element with 3D wrapper
-    function createCan(product, shelf, col, depth) {
+    // Create a single can element with 3D wrapper and circular spring
+    function createCan(product, shelf, row, depth) {
         const can = document.createElement('div');
         can.className = 'can';
         can.dataset.productId = product.id;
         can.dataset.shelf = shelf;
-        can.dataset.col = col;
+        can.dataset.row = row;
         can.dataset.depth = depth;
+
+        // Create circular spring element (coil that pushes the can)
+        const spring = document.createElement('div');
+        spring.className = 'spring-coil';
 
         // Create 3D wrapper for transform effects
         const wrapper = document.createElement('div');
@@ -120,6 +130,7 @@ const VendingMachine = (function() {
         };
 
         wrapper.appendChild(img);
+        can.appendChild(spring); // Spring behind the can
         can.appendChild(wrapper);
 
         // Only front cans are clickable (handled by event delegation now)
@@ -152,7 +163,7 @@ const VendingMachine = (function() {
         const canElement = selectedCanElement;
         const product = selectedProduct;
         const shelf = parseInt(canElement.dataset.shelf);
-        const col = parseInt(canElement.dataset.col);
+        const row = parseInt(canElement.dataset.row);
         const depth = parseInt(canElement.dataset.depth);
 
         // Check if can is already dropping or doesn't exist
@@ -181,11 +192,11 @@ const VendingMachine = (function() {
                 addToCart(product);
 
                 // Remove the can from grid
-                canGrid[shelf][col][depth] = null;
+                canGrid[shelf][row][depth] = null;
                 canElement.remove();
 
-                // Move remaining cans forward (from deeper rows)
-                moveCanForward(shelf, col, depth);
+                // Move remaining cans forward (from behind)
+                moveCanForward(shelf, row, depth);
 
                 // Unlock transaction after animation completes
                 setTimeout(() => {
@@ -198,40 +209,57 @@ const VendingMachine = (function() {
 
     // Animate spring rotation and push the can forward
     function animateSpringPush(canElement, callback) {
-        // Add spring rotation animation to the ::before element
-        canElement.classList.add('spring-rotating');
+        const spring = canElement.querySelector('.spring-coil');
 
-        // Add push-out animation to the can
+        // Add spring rotation animation
+        if (spring) {
+            spring.classList.add('spring-rotating');
+        }
+
+        // Add push-out animation to the can after brief delay
         setTimeout(() => {
             canElement.classList.add('pushing-out');
-        }, 300);
+        }, 400);
 
         // Call callback after push animation
         setTimeout(() => {
-            canElement.classList.remove('spring-rotating');
+            if (spring) {
+                spring.classList.remove('spring-rotating');
+            }
             if (callback) callback();
-        }, 800);
+        }, 900);
     }
 
-    // Move cans forward after one is dispensed - FIXED CASCADE LOGIC
-    function moveCanForward(shelf, col, depth) {
+    // Move cans forward after one is dispensed - Spring push mechanics
+    function moveCanForward(shelf, row, depth) {
         // Only process if front can was taken
         if (depth !== 0) return;
 
-        // Cascade all cans forward: back -> middle -> front
-        // Start from position 1 (middle) and move each can forward
-        for (let d = 1; d < 3; d++) {
-            const canToMove = canGrid[shelf][col][d];
+        // Cascade all cans forward from back to front (like a real vending machine)
+        // The spring behind pushes all cans forward
+        const maxDepth = 5;
+
+        for (let d = 1; d < maxDepth; d++) {
+            const canToMove = canGrid[shelf][row][d];
 
             if (canToMove) {
                 const newDepth = d - 1;
 
-                // Move to front with animation
+                // Animate the spring pushing the can forward
+                const spring = canToMove.querySelector('.spring-coil');
+                if (spring) {
+                    spring.classList.add('spring-pushing');
+                    setTimeout(() => {
+                        spring.classList.remove('spring-pushing');
+                    }, 600);
+                }
+
+                // Move can forward with animation
                 canToMove.classList.add('moving-forward');
 
                 // Update grid position
-                canGrid[shelf][col][newDepth] = canToMove;
-                canGrid[shelf][col][d] = null;
+                canGrid[shelf][row][newDepth] = canToMove;
+                canGrid[shelf][row][d] = null;
 
                 // Update data attributes and styling
                 canToMove.dataset.depth = newDepth;

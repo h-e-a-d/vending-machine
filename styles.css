@@ -126,28 +126,29 @@ body {
 
 .cans-grid {
     display: grid;
-    grid-template-columns: repeat(10, 1fr);
-    grid-template-rows: repeat(18, 1fr); /* 6 shelves × 3 depth rows */
-    gap: 3px;
+    grid-template-columns: repeat(5, 1fr); /* 5 rows per shelf */
+    grid-template-rows: repeat(30, 1fr); /* 6 shelves × 5 rows each */
+    gap: 2px;
     height: 600px;
     position: relative;
     background:
-        /* Horizontal shelves - every 3 rows */
+        /* Horizontal shelves - every 5 rows */
         repeating-linear-gradient(
             to bottom,
             transparent 0px,
-            transparent calc(100% / 6 - 2px),
-            #888 calc(100% / 6 - 2px),
+            transparent calc(100% / 6 - 3px),
+            #888 calc(100% / 6 - 3px),
+            #666 calc(100% / 6 - 1px),
             #555 calc(100% / 6),
             transparent calc(100% / 6)
         ),
-        /* Vertical dividers between columns */
+        /* Vertical dividers between rows */
         repeating-linear-gradient(
             to right,
             transparent 0px,
-            transparent calc(10% - 1px),
-            rgba(136, 136, 136, 0.3) calc(10% - 1px),
-            rgba(136, 136, 136, 0.3) 10%
+            transparent calc(20% - 1px),
+            rgba(136, 136, 136, 0.2) calc(20% - 1px),
+            rgba(136, 136, 136, 0.2) 20%
         );
 }
 
@@ -190,82 +191,144 @@ body {
     perspective: 500px;
 }
 
-/* Depth row styling - front, middle, back */
+/* Depth row styling - 5 levels from front to back */
 .can[data-depth="0"] {
-    /* Front row - most visible */
+    /* Front row - most visible, customer facing */
     opacity: 1;
     filter: brightness(1);
-    z-index: 3;
+    transform: scale(1) translateZ(0);
+    z-index: 5;
 }
 
 .can[data-depth="1"] {
-    /* Middle row - slightly dimmed */
-    opacity: 0.85;
-    filter: brightness(0.9);
-    transform: scale(0.95);
-    z-index: 2;
+    /* Second row */
+    opacity: 0.9;
+    filter: brightness(0.95);
+    transform: scale(0.96) translateZ(-5px);
+    z-index: 4;
 }
 
 .can[data-depth="2"] {
-    /* Back row - most dimmed */
+    /* Middle row */
+    opacity: 0.8;
+    filter: brightness(0.88);
+    transform: scale(0.92) translateZ(-10px);
+    z-index: 3;
+}
+
+.can[data-depth="3"] {
+    /* Fourth row */
     opacity: 0.7;
-    filter: brightness(0.8);
-    transform: scale(0.90);
+    filter: brightness(0.82);
+    transform: scale(0.88) translateZ(-15px);
+    z-index: 2;
+}
+
+.can[data-depth="4"] {
+    /* Back row - furthest from customer */
+    opacity: 0.6;
+    filter: brightness(0.75);
+    transform: scale(0.84) translateZ(-20px);
     z-index: 1;
 }
 
-/* Circular/helical spring coil behind each can */
-.can::before {
+/* Circular spring coil element - realistic vending machine spring */
+.spring-coil {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 50px;
+    height: 50px;
+    z-index: -1;
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+/* Create circular spring coil using conic gradient */
+.spring-coil::before {
     content: '';
     position: absolute;
-    bottom: 5%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 40%;
-    height: 70%;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
     background:
-        /* Spring coil rings */
-        radial-gradient(ellipse 100% 8% at 50% 10%, #888 0%, #666 40%, transparent 50%),
-        radial-gradient(ellipse 100% 8% at 50% 25%, #888 0%, #666 40%, transparent 50%),
-        radial-gradient(ellipse 100% 8% at 50% 40%, #888 0%, #666 40%, transparent 50%),
-        radial-gradient(ellipse 100% 8% at 50% 55%, #888 0%, #666 40%, transparent 50%),
-        radial-gradient(ellipse 100% 8% at 50% 70%, #888 0%, #666 40%, transparent 50%),
-        radial-gradient(ellipse 100% 8% at 50% 85%, #888 0%, #666 40%, transparent 50%),
-        /* Central spring wire */
-        linear-gradient(90deg,
-            transparent 45%,
-            #555 45%,
-            #777 48%,
-            #999 50%,
-            #777 52%,
-            #555 55%,
-            transparent 55%
+        /* Outer ring */
+        radial-gradient(circle at center,
+            transparent 0%,
+            transparent 55%,
+            #777 55%,
+            #999 60%,
+            #888 65%,
+            #666 70%,
+            transparent 70%
         );
-    z-index: -1;
-    opacity: 0.5;
-    filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.3));
-    transition: transform 0.5s ease;
-    transform-origin: right center;
+    box-shadow:
+        inset 0 2px 4px rgba(0, 0, 0, 0.4),
+        0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-/* Spring rotation animation */
+/* Inner coil detail */
+.spring-coil::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 70%;
+    height: 70%;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at 30% 30%,
+            #aaa 0%,
+            #888 20%,
+            #666 40%,
+            #555 60%,
+            #444 100%
+        );
+    box-shadow:
+        inset -2px -2px 4px rgba(255, 255, 255, 0.2),
+        inset 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Spring rotation animation - spins the circular spring */
 @keyframes springRotate {
     0% {
-        transform: translateX(-50%) scaleX(1) rotateY(0deg);
-        opacity: 0.4;
+        transform: translate(-50%, -50%) rotate(0deg) scale(1);
+        opacity: 0.7;
     }
     50% {
-        transform: translateX(-50%) scaleX(1.3) rotateY(180deg);
-        opacity: 0.6;
+        transform: translate(-50%, -50%) rotate(360deg) scale(1.2);
+        opacity: 0.9;
     }
     100% {
-        transform: translateX(-50%) scaleX(0.5) rotateY(360deg);
-        opacity: 0.3;
+        transform: translate(-50%, -50%) rotate(720deg) scale(0.8);
+        opacity: 0.5;
     }
 }
 
-.can.spring-rotating::before {
-    animation: springRotate 0.5s ease-out forwards;
+.spring-coil.spring-rotating {
+    animation: springRotate 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+/* Spring pushing animation - when cans move forward */
+@keyframes springPush {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+    }
+    30% {
+        transform: translate(-50%, -50%) scale(1.3) rotate(45deg);
+    }
+    60% {
+        transform: translate(-50%, -50%) scale(0.9) rotate(90deg);
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1) rotate(0deg);
+    }
+}
+
+.spring-coil.spring-pushing {
+    animation: springPush 0.6s ease-in-out forwards;
 }
 
 /* Push out animation - can being pushed forward by spring */
@@ -869,15 +932,36 @@ body {
         text-align: left;
     }
 
-    /* FIXED: Keep 10 columns to match JavaScript grid generation
-       Only reduce visual size, don't change column count */
+    /* Keep 5 columns (rows per shelf) to match JavaScript grid generation
+       Only reduce visual size for mobile */
     .cans-grid {
-        height: 400px; /* Reduce height for mobile */
+        height: 450px; /* Reduce height for mobile */
+        gap: 1px;
     }
 
     /* Make cans smaller on mobile */
     .can {
-        transform: scale(0.85);
+        font-size: 0.85em;
+    }
+
+    .can[data-depth="0"] {
+        transform: scale(0.9) translateZ(0);
+    }
+
+    .can[data-depth="1"] {
+        transform: scale(0.86) translateZ(-5px);
+    }
+
+    .can[data-depth="2"] {
+        transform: scale(0.82) translateZ(-10px);
+    }
+
+    .can[data-depth="3"] {
+        transform: scale(0.78) translateZ(-15px);
+    }
+
+    .can[data-depth="4"] {
+        transform: scale(0.74) translateZ(-20px);
     }
 
     .shopping-cart {
